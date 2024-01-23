@@ -39,7 +39,7 @@ def initialise_scenario():
 
     targetA = STK.root.CurrentScenario.Children.New(AgESTKObjectType.eTarget, targetNameA)
     targetA.Position.AssignGeodetic(moonLatitudeA, moonLongitudeA, moonAltitudeA)
-    targetA.Vgt.Target.CentralBodyName = 'Moon'
+    #targetA.CentralBodyName = 'Moon'
 
     # Colony B
     targetNameB = "MoonBaseB"
@@ -49,7 +49,7 @@ def initialise_scenario():
 
     targetB = STK.root.CurrentScenario.Children.New(AgESTKObjectType.eTarget, targetNameB)
     targetB.Position.AssignGeodetic(moonLatitudeB, moonLongitudeB, moonAltitudeB)
-    targetB.Vgt.Target.CentralBodyName = 'Moon'
+    #targetB.CentralBodyName = 'Moon'
 
 
     # Create DSN ground stations
@@ -79,7 +79,8 @@ def add_moon_satellite(inclination: int, name: str) -> tuple[IAgSatellite, IAgSe
     """Creates a Moon satellite with the given inclination and name. Sets the initial state, adds a sensor and a range constraint."""
 
     # Create satellite object
-    satellite = None  # TODO
+    satellite = STK.root.CurrentScenario.Children.New(AgESTKObjectType.eSatellite, name)
+    satellite.SetPropagatorType(AgEVePropagatorType.ePropagatorTwoBody)
 
     # Set initial state
     # TODO
