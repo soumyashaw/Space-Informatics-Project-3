@@ -1,5 +1,4 @@
-from agi.stk12.stkobjects import IAgSatellite, IAgSensor
-from agi.stk12.stkdesktop import AgESTKObjectType
+from agi.stk12.stkobjects import IAgSatellite, IAgSensor, AgEVePropagatorType, AgESTKObjectType
 
 from spain.config import namespace
 from spain.stk import STK
@@ -37,9 +36,8 @@ def initialise_scenario():
     moonLongitudeA = namespace.base_A.lon
     moonAltitudeA = namespace.base_A.alt
 
-    targetA = STK.root.CurrentScenario.Children.New(AgESTKObjectType.eTarget, targetNameA)
+    targetA = STK.root.CurrentScenario.Children.NewOnCentralBody(AgESTKObjectType.eTarget, targetNameA, 'Moon')
     targetA.Position.AssignGeodetic(moonLatitudeA, moonLongitudeA, moonAltitudeA)
-    #targetA.CentralBodyName = 'Moon'
 
     # Colony B
     targetNameB = "MoonBaseB"
@@ -47,10 +45,8 @@ def initialise_scenario():
     moonLongitudeB = namespace.base_B.lon
     moonAltitudeB = namespace.base_B.alt
 
-    targetB = STK.root.CurrentScenario.Children.New(AgESTKObjectType.eTarget, targetNameB)
+    targetB = STK.root.CurrentScenario.Children.NewOnCentralBody(AgESTKObjectType.eTarget, targetNameB, 'Moon')
     targetB.Position.AssignGeodetic(moonLatitudeB, moonLongitudeB, moonAltitudeB)
-    #targetB.CentralBodyName = 'Moon'
-
 
     # Create DSN ground stations
     facilityName1 = "DSS_14_Goldstone_STDN_DS14"
@@ -83,7 +79,19 @@ def add_moon_satellite(inclination: int, name: str) -> tuple[IAgSatellite, IAgSe
     satellite.SetPropagatorType(AgEVePropagatorType.ePropagatorTwoBody)
 
     # Set initial state
-    # TODO
+    sma = namespace.sma
+    ecc = namespace.ecc
+    aop = namespace.aop
+    raan = namespace.raan
+    ta = namespace.ta
+    incl = inclination
+
+    satellite.orbit.SetElementType(AgEOrbitStateType.eOrbitTwoBody)
+    satellite.orbit.InitialState.Representation.AssignClassical(
+        AgECoordinateSystem.eCoordinateSystemJ2000, incl, ecc, sma, aop, raan, ta
+    )
+
+    satellite.Propagator.Propagate()
 
     # Add sensor
     sensor = None  # TODO
