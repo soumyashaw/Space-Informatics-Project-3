@@ -39,7 +39,7 @@ def initialise_scenario():
 
     targetA = STK.root.CurrentScenario.Children.New(AgESTKObjectType.eTarget, targetNameA)
     targetA.Position.AssignGeodetic(moonLatitudeA, moonLongitudeA, moonAltitudeA)
-    targetA.CentralBody = 'Moon'
+    targetA.Vgt.Target.CentralBodyName = 'Moon'
 
     # Colony B
     targetNameB = "MoonBaseB"
@@ -49,7 +49,7 @@ def initialise_scenario():
 
     targetB = STK.root.CurrentScenario.Children.New(AgESTKObjectType.eTarget, targetNameB)
     targetB.Position.AssignGeodetic(moonLatitudeB, moonLongitudeB, moonAltitudeB)
-    targetB.CentralBody = 'Moon'
+    targetB.Vgt.Target.CentralBodyName = 'Moon'
 
 
     # Create DSN ground stations
