@@ -186,11 +186,29 @@ def compute_access_intervals() -> tuple[IntervalList, IntervalList, IntervalList
     access2.ComputeAccess()
 
     # Sunlight intervals
-    lighting_times_report = STK.root.CurrentScenario.Objects.Add(AgESTKObjectType.eLightingTimes, "MoonSatLightingTimesReport")
-    lighting_times_report.Objects.AddObject(satellite)
-    lighting_times_report.Run()
-    print(lighting_times_report)
-    
+    eclipseProvider = satellite.DataProviders.Item("Eclipse Times")
+    eclipseIntervals = eclipseProvider.Exec(STK.root.CurrentScenario.StartTime, STK.root.CurrentScenario.StopTime)
+
+    # Process the intervals to find sunlight windows
+    sunlitWindows = []
+    prevStopTime = STK.root.CurrentScenario.StartTime
+
+    # Extract the start and stop times for each eclipse
+    startTimes = eclipseIntervals.DataSets.GetDataSetByName("Start Time").GetValues()
+    stopTimes = eclipseIntervals.DataSets.GetDataSetByName("Stop Time").GetValues()
+
+    # Iterate through the eclipse intervals
+    for startTime, stopTime in zip(startTimes, stopTimes):
+        # Sunlight window is the time between the end of the previous eclipse and the start of the current one
+        if startTime != prevStopTime:
+            sunlitWindows.append((prevStopTime, startTime))
+        prevStopTime = stopTime
+
+    # Add final sunlight window if necessary
+    if prevStopTime != STK.root.CurrentScenario.StopTime:
+        sunlitWindows.append((prevStopTime, STK.root.CurrentScenario.StopTime))
+
+
 
     # Compute and extract access intervals
     access_intervals_A: IntervalList = []
@@ -203,7 +221,7 @@ def compute_access_intervals() -> tuple[IntervalList, IntervalList, IntervalList
     accessList2 = access2.ComputedAccessIntervalTimes.ToArray(0, -1)
     access_intervals_B = [(parse_stk_date(itr[0]), parse_stk_date(itr[1])) for itr in accessList2]
 
-    sunAccessList = sunAccess.ComputedAccessIntervalTimes.ToArray(0, -1)
-    access_intervals_sun = [(parse_stk_date(itr[0]), parse_stk_date(itr[1])) for itr in sunAccessList]
+    # sunAccessList = sunAccess.ComputedAccessIntervalTimes.ToArray(0, -1)
+    access_intervals_sun = [(parse_stk_date(start), parse_stk_date(stop)) for start, stop in sunlitWindows]
 
     return access_intervals_A, access_intervals_B, access_intervals_sun
