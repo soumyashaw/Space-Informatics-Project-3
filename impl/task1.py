@@ -1,9 +1,11 @@
-from agi.stk12.stkobjects import IAgSatellite, IAgSensor, AgEVePropagatorType, AgESTKObjectType, AgECoordinateSystem
+from agi.stk12.stkobjects import IAgSatellite, IAgSensor, AgEVePropagatorType, AgESTKObjectType
+from agi.stk12.stkobjects import AgEOrbitStateType, AgEClassicalLocation, AgEClassicalSizeShape, AgEOrientationAscNode
 
 from spain.config import namespace
 from spain.stk import STK
 from spain.types import IntervalList
 from spain.util import inclinations, parse_stk_date, unparse_date_stk
+import math
 
 __all__ = [
     "initialise_scenario",
@@ -79,35 +81,22 @@ def add_moon_satellite(inclination: int, name: str) -> tuple[IAgSatellite, IAgSe
     satellite.SetPropagatorType(AgEVePropagatorType.ePropagatorTwoBody)
 
     # Set initial state
-    sma = namespace.sma
-    ecc = namespace.ecc
-    aop = namespace.aop
-    raan = namespace.raan
-    ta = namespace.ta
-    incl = inclination
-
-    """keplerian = satellite.Propagator.InitialState.Representation.ConvertTo(AgEOrbitStateType.eOrbitStateClassical)
-    keplerian.SizeShapeType = AgEClassicalSizeShape.eSizeShapeAltitude
+    keplerian = satellite.Propagator.InitialState.Representation.ConvertTo(AgEOrbitStateType.eOrbitStateClassical)
+    keplerian.SizeShapeType = AgEClassicalSizeShape.eSizeShapeSemimajorAxis
     keplerian.LocationType = AgEClassicalLocation.eLocationTrueAnomaly
     keplerian.Orientation.AscNodeType = AgEOrientationAscNode.eAscNodeLAN
 
-    # Assign the perigee and apogee altitude values:
-    keplerian.SizeShape.PerigeeAltitude = 500      # km
-    keplerian.SizeShape.ApogeeAltitude = 600       # km
-
-    # Assign the other desired orbital parameters:
-    keplerian.Orientation.Inclination = 90         # deg
-    keplerian.Orientation.ArgOfPerigee = 12        # deg
-    keplerian.Orientation.AscNode.Value = 24       # deg
-    keplerian.Location.Value = 180                 # deg
+    keplerian.SizeShape.SemiMajorAxis = namespace.sma  # km
+    keplerian.SizeShape.Eccentricity = namespace.ecc
+    keplerian.Orientation.ArgOfPerigee = namespace.aop  # deg
+    keplerian.Orientation.AscNode.Value = namespace.raan  # deg
+    keplerian.Orientation.TrueAnomaly = namespace.ta  # deg
+    keplerian.Orientation.Inclination = inclination  # deg
 
     # Apply the changes made to the satellite's state and propagate:
     satellite.Propagator.InitialState.Representation.Assign(keplerian)
-    satellite.Propagator.Propagate()"""
-
-    satellite.Propagator.InitialState.Representation.AssignClassical(AgECoordinateSystem.eCoordinateSystemJ2000,
-                                                                    incl, ecc, sma, aop, raan, ta)
     satellite.Propagator.Propagate()
+
 
     # Add sensor
     sensor = None  # TODO
