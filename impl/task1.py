@@ -1,11 +1,10 @@
-from agi.stk12.stkobjects import IAgSatellite, IAgSensor, AgEVePropagatorType, AgESTKObjectType
-from agi.stk12.stkobjects import AgEOrbitStateType, AgEClassicalLocation, AgEClassicalSizeShape, AgEOrientationAscNode
+from agi.stk12.stkobjects import IAgSatellite, IAgSensor, AgEVePropagatorType, AgESTKObjectType, AgEAccessConstraints
+from agi.stk12.stkobjects import AgEOrbitStateType, AgEClassicalLocation, AgEClassicalSizeShape, AgEYPRAnglesSequence
 
 from spain.config import namespace
 from spain.stk import STK
 from spain.types import IntervalList
 from spain.util import inclinations, parse_stk_date, unparse_date_stk
-import math
 
 __all__ = [
     "initialise_scenario",
@@ -77,21 +76,21 @@ def add_moon_satellite(inclination: int, name: str) -> tuple[IAgSatellite, IAgSe
     """Creates a Moon satellite with the given inclination and name. Sets the initial state, adds a sensor and a range constraint."""
 
     # Create satellite object
-    satellite = STK.root.CurrentScenario.Children.New(AgESTKObjectType.eSatellite, name)
+    satellite = STK.root.CurrentScenario.Children.NewOnCentralBody(AgESTKObjectType.eSatellite, name, 'Moon')
     satellite.SetPropagatorType(AgEVePropagatorType.ePropagatorTwoBody)
 
     # Set initial state
     keplerian = satellite.Propagator.InitialState.Representation.ConvertTo(AgEOrbitStateType.eOrbitStateClassical)
     keplerian.SizeShapeType = AgEClassicalSizeShape.eSizeShapeSemimajorAxis
     keplerian.LocationType = AgEClassicalLocation.eLocationTrueAnomaly
-    keplerian.Orientation.AscNodeType = AgEOrientationAscNode.eAscNodeLAN
+    keplerian.Orientation.AscNodeType = 1
 
     keplerian.SizeShape.SemiMajorAxis = namespace.sma  # km
     keplerian.SizeShape.Eccentricity = namespace.ecc
     keplerian.Orientation.ArgOfPerigee = namespace.aop  # deg
     keplerian.Orientation.AscNode.Value = namespace.raan  # deg
-    keplerian.Orientation.TrueAnomaly = namespace.ta  # deg
     keplerian.Orientation.Inclination = inclination  # deg
+    keplerian.Location.Value = namespace.ta  # deg
 
     # Apply the changes made to the satellite's state and propagate:
     satellite.Propagator.InitialState.Representation.Assign(keplerian)
@@ -99,10 +98,19 @@ def add_moon_satellite(inclination: int, name: str) -> tuple[IAgSatellite, IAgSe
 
 
     # Add sensor
-    sensor = None  # TODO
+    sensor = satellite.Children.New(AgESTKObjectType.eSensor, "MoonSatAntenna")
 
     # Add range constraint
-    # TODO
+    rangeConstraint = sensor.AccessConstraints.AddConstraint(AgEAccessConstraints.eCstrRange)
+    rangeConstraint.EnableMax = True
+    rangeConstraint.Max = 1000
+
+    sensor.SetConeAngle(30.0)
+
+    (yaw, pitch, roll) = namespace.ypr
+    sensor.CommonTasks.SetPointingFixedYPR(AgEYPRAnglesSequence.eRPY, yaw, pitch, roll)
+
+    print(sensor.CommonTasks.AccessConstraints)
 
     return satellite, sensor
 
