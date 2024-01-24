@@ -5,6 +5,7 @@ from spain.config import namespace
 from spain.stk import STK
 from spain.types import IntervalList
 from spain.util import inclinations, parse_stk_date, unparse_date_stk
+import datetime
 
 __all__ = [
     "initialise_scenario",
@@ -119,10 +120,49 @@ def find_best_inclination() -> int:
     # Create four satellites
     satellites = [add_moon_satellite(inc, f"MoonSat{inc}") for inc in inclinations]
 
-    # Find best inclination
-    # TODO
+    bestPerformingSat = -1
+    bestPerformingDuration = -1.0
 
-    return -1
+
+    for satellite, sensor in satellites:
+        totalDuration = 0.0
+        access1 = sensor.GetAccess("Target/MoonBaseA")
+        access1.ComputeAccess()
+        accessList1 = access1.ComputedAccessIntervalTimes.ToArray(0, -1)
+        for itr in accessList1:
+            # Caluculate the Duration of the access in seconds
+            duration = (parse_stk_date(itr[1]) - parse_stk_date(itr[0])).total_seconds()
+            # Calculate the Duration of the data transfer after Synchronization
+            duration = duration - 20.0
+            # Add up to the total duration
+            if duration > 0:
+                totalDuration = totalDuration + duration
+            
+
+        access2 = sensor.GetAccess("Target/MoonBaseB")
+        access2.ComputeAccess()
+        accessList2 = access2.ComputedAccessIntervalTimes.ToArray(0, -1)
+        for itr in accessList2:
+            # Caluculate the Duration of the access in seconds
+            duration = (parse_stk_date(itr[1]) - parse_stk_date(itr[0])).total_seconds()
+            # Calculate the Duration of the data transfer after Synchronization
+            duration = duration - 20.0
+            # Add up to the total duration
+            if duration > 0:
+                totalDuration = totalDuration + duration
+
+        print(f"Total Duration of Communication for {satellite.InstanceName} is {totalDuration}")
+        if totalDuration > bestPerformingDuration:
+            bestPerformingDuration = totalDuration
+            bestPerformingSat = satellite
+
+    print(f"Best Performing Satellite is {bestPerformingSat.InstanceName} with a total Duration of {bestPerformingDuration}")
+    
+
+    # Find best inclination
+    bestInclination = int(bestPerformingSat.InstanceName.replace("MoonSat", ""))
+    
+    return bestInclination
 
 
 def compute_access_intervals() -> tuple[IntervalList, IntervalList, IntervalList]:
