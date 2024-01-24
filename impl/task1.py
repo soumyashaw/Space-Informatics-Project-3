@@ -105,12 +105,10 @@ def add_moon_satellite(inclination: int, name: str) -> tuple[IAgSatellite, IAgSe
     rangeConstraint.EnableMax = True
     rangeConstraint.Max = 1000
 
-    sensor.SetConeAngle(30.0)
+    sensor.Pattern.ConeAngle = namespace.ang / 2  # deg
 
     (yaw, pitch, roll) = namespace.ypr
     sensor.CommonTasks.SetPointingFixedYPR(AgEYPRAnglesSequence.eRPY, yaw, pitch, roll)
-
-    print(sensor.CommonTasks.AccessConstraints)
 
     return satellite, sensor
 
