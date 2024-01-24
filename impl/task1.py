@@ -208,8 +208,6 @@ def compute_access_intervals() -> tuple[IntervalList, IntervalList, IntervalList
     if prevStopTime != STK.root.CurrentScenario.StopTime:
         sunlitWindows.append((prevStopTime, STK.root.CurrentScenario.StopTime))
 
-
-
     # Compute and extract access intervals
     access_intervals_A: IntervalList = []
     access_intervals_B: IntervalList = []
@@ -221,7 +219,6 @@ def compute_access_intervals() -> tuple[IntervalList, IntervalList, IntervalList
     accessList2 = access2.ComputedAccessIntervalTimes.ToArray(0, -1)
     access_intervals_B = [(parse_stk_date(itr[0]), parse_stk_date(itr[1])) for itr in accessList2]
 
-    # sunAccessList = sunAccess.ComputedAccessIntervalTimes.ToArray(0, -1)
     access_intervals_sun = [(parse_stk_date(start), parse_stk_date(stop)) for start, stop in sunlitWindows]
 
     return access_intervals_A, access_intervals_B, access_intervals_sun
