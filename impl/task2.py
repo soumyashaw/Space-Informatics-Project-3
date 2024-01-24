@@ -30,6 +30,21 @@ def mergeIntervals(listA, listB):
     
     return mergedIntervals
 
+def findCoincidingIntervals(listA, listB):
+    coincidingIntervals = []
+
+    # Combine both lists
+    allIntervals = listA + listB
+    
+    # Sort intervals based on start time
+    allIntervals.sort(key=lambda x: x[0])
+
+    for i in range(1, len(allIntervals)):
+        if allIntervals[i][0] <= allIntervals[i - 1][1]:
+            # Coinciding intervals found
+            coincidingIntervals.append((max(allIntervals[i][0], allIntervals[i - 1][0]), min(allIntervals[i][1], allIntervals[i - 1][1])))
+
+    return coincidingIntervals
 
 
 def find_schedule_lp(
@@ -41,7 +56,7 @@ def find_schedule_lp(
     intervals_B: IntervalList = []
 
     # Compute schedule
-    mergedIntervals = mergeIntervals(access_A, access_B)
+    mergedIntervals = findCoincidingIntervals(access_A, access_B)
     mergedIntervalsData = []
     for itr in mergedIntervals:
         # Caluculate the Data collected in the interval
