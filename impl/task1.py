@@ -186,9 +186,10 @@ def compute_access_intervals() -> tuple[IntervalList, IntervalList, IntervalList
     access2.ComputeAccess()
 
     # Sunlight intervals
-    sun = STK.root.GetObjectFromPath("CentralBodies/Sun")
-    sunAccess = sensor.GetAccessToObject(sun.Path)
-    sunAccess.ComputeAccess()
+    lighting_times_report = STK.root.CurrentScenario.Objects.Add(AgESTKObjectType.eLightingTimes, "MoonSatLightingTimesReport")
+    lighting_times_report.Objects.AddObject(satellite)
+    lighting_times_report.Run()
+    print(lighting_times_report)
     
 
     # Compute and extract access intervals
