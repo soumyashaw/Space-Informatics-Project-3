@@ -76,6 +76,8 @@ def initialise_scenario():
 def add_moon_satellite(inclination: int, name: str) -> tuple[IAgSatellite, IAgSensor]:
     """Creates a Moon satellite with the given inclination and name. Sets the initial state, adds a sensor and a range constraint."""
 
+    global satellite, sensor
+
     # Create satellite object
     satellite = STK.root.CurrentScenario.Children.NewOnCentralBody(AgESTKObjectType.eSatellite, name, 'Moon')
     satellite.SetPropagatorType(AgEVePropagatorType.ePropagatorTwoBody)
@@ -117,6 +119,8 @@ def add_moon_satellite(inclination: int, name: str) -> tuple[IAgSatellite, IAgSe
 def find_best_inclination() -> int:
     """Find the best inclination for a Moon satellite w.r.t. the two colonies."""
 
+    global satellite, sensor
+
     # Create four satellites
     satellites = [add_moon_satellite(inc, f"MoonSat{inc}") for inc in inclinations]
 
@@ -124,7 +128,7 @@ def find_best_inclination() -> int:
     bestPerformingDuration = -1.0
 
 
-    for satellite, sensor in satellites:
+    for sat, sensor in satellites:
         totalDuration = 0.0
         access1 = sensor.GetAccess("Target/MoonBaseA")
         access1.ComputeAccess()
@@ -151,10 +155,13 @@ def find_best_inclination() -> int:
             if duration > 0:
                 totalDuration = totalDuration + duration
 
-        print(f"Total Duration of Communication for {satellite.InstanceName} is {totalDuration}")
+        print(f"Total Duration of Communication for {sat.InstanceName} is {totalDuration}s")
         if totalDuration > bestPerformingDuration:
             bestPerformingDuration = totalDuration
-            bestPerformingSat = satellite
+            bestPerformingSat = sat
+
+    satellite = bestPerformingSat
+    sensor = bestPerformingSat.Children.Item("MoonSatAntenna")
 
     print(f"Best Performing Satellite is {bestPerformingSat.InstanceName} with a total Duration of {bestPerformingDuration}")
     
@@ -168,15 +175,34 @@ def find_best_inclination() -> int:
 def compute_access_intervals() -> tuple[IntervalList, IntervalList, IntervalList]:
     """Extract the access intervals for the Moon satellite with both colonies and the sun."""
 
+    global satellite, sensor
+
     # Get satellite and sensor from STK scenario
-    satellite = None  # TODO
-    sensor = None  # TODO
+    access1 = sensor.GetAccess("Target/MoonBaseA")
+    access1.ComputeAccess()
+
+    # Access intervals for MoonBaseB
+    access2 = sensor.GetAccess("Target/MoonBaseB")
+    access2.ComputeAccess()
+
+    # Sunlight intervals
+    sun = STK.root.GetObjectFromPath("CentralBodies/Sun")
+    sunAccess = sensor.GetAccessToObject(sun.Path)
+    sunAccess.ComputeAccess()
+    
 
     # Compute and extract access intervals
     access_intervals_A: IntervalList = []
     access_intervals_B: IntervalList = []
     access_intervals_sun: IntervalList = []
 
-    # TODO
+    accessList1 = access1.ComputedAccessIntervalTimes.ToArray(0, -1)
+    access_intervals_A = [(parse_stk_date(itr[0]), parse_stk_date(itr[1])) for itr in accessList1]
+
+    accessList2 = access2.ComputedAccessIntervalTimes.ToArray(0, -1)
+    access_intervals_B = [(parse_stk_date(itr[0]), parse_stk_date(itr[1])) for itr in accessList2]
+
+    sunAccessList = sunAccess.ComputedAccessIntervalTimes.ToArray(0, -1)
+    access_intervals_sun = [(parse_stk_date(itr[0]), parse_stk_date(itr[1])) for itr in sunAccessList]
 
     return access_intervals_A, access_intervals_B, access_intervals_sun
