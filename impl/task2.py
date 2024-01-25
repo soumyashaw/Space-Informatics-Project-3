@@ -76,8 +76,8 @@ def find_schedule_lp(
 
     # Create variables for the model. x represents the intervals chosen for colony A 
     # and y represents the intervals chosen for colony B. Both are binary variables to represent scheduling.
-    # x[i] = 1 represents that the ith interval is alocated to colony A for communication.
-    # y[i] = 1 represents that the ith interval is alocated to colony B for communication.
+    # x[i] = 1 represents that the ith interval is allocated to colony A for communication.
+    # y[i] = 1 represents that the ith interval is allocated to colony B for communication.
     # 0 in both variables represents that the interval is not allocated to the colony. (i.e. no communication)
     x = m.addVars(x, vtype=GRB.BINARY, name="x")
     y = m.addVars(y, vtype=GRB.BINARY, name="y")
