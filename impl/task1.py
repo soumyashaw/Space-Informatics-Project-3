@@ -1,3 +1,4 @@
+# Imports
 from agi.stk12.stkobjects import IAgSatellite, IAgSensor, AgEVePropagatorType, AgESTKObjectType, AgEAccessConstraints
 from agi.stk12.stkobjects import AgEOrbitStateType, AgEClassicalLocation, AgEClassicalSizeShape, AgEYPRAnglesSequence
 
@@ -88,12 +89,12 @@ def add_moon_satellite(inclination: int, name: str) -> tuple[IAgSatellite, IAgSe
     keplerian.LocationType = AgEClassicalLocation.eLocationTrueAnomaly
     keplerian.Orientation.AscNodeType = 1
 
-    keplerian.SizeShape.SemiMajorAxis = namespace.sma  # km
+    keplerian.SizeShape.SemiMajorAxis = namespace.sma    # km
     keplerian.SizeShape.Eccentricity = namespace.ecc
-    keplerian.Orientation.ArgOfPerigee = namespace.aop  # deg
-    keplerian.Orientation.AscNode.Value = namespace.raan  # deg
-    keplerian.Orientation.Inclination = inclination  # deg
-    keplerian.Location.Value = namespace.ta  # deg
+    keplerian.Orientation.ArgOfPerigee = namespace.aop   # deg
+    keplerian.Orientation.AscNode.Value = namespace.raan # deg
+    keplerian.Orientation.Inclination = inclination      # deg
+    keplerian.Location.Value = namespace.ta              # deg
 
     # Apply the changes made to the satellite's state and propagate:
     satellite.Propagator.InitialState.Representation.Assign(keplerian)
@@ -108,8 +109,10 @@ def add_moon_satellite(inclination: int, name: str) -> tuple[IAgSatellite, IAgSe
     rangeConstraint.EnableMax = True
     rangeConstraint.Max = 1000
 
+    # Add angle constraint
     sensor.Pattern.ConeAngle = namespace.ang / 2  # deg
 
+    # Add Orientation
     (yaw, pitch, roll) = namespace.ypr
     sensor.CommonTasks.SetPointingFixedYPR(AgEYPRAnglesSequence.eRPY, yaw, pitch, roll)
 
@@ -124,38 +127,49 @@ def find_best_inclination() -> int:
     # Create four satellites
     satellites = [add_moon_satellite(inc, f"MoonSat{inc}") for inc in inclinations]
 
+    # Initialize variables to store the best performing satellite
     bestPerformingSat = -1
     bestPerformingDuration = -1.0
 
-
+    # Iterate through all the satellites and find the best performing satellite
     for sat, sensor in satellites:
+        # Initialize the total duration of communication
         totalDuration = 0.0
+
+        # Compute the access intervals for the colony A
         access1 = sensor.GetAccess("Target/MoonBaseA")
         access1.ComputeAccess()
         accessList1 = access1.ComputedAccessIntervalTimes.ToArray(0, -1)
+
         for itr in accessList1:
             # Caluculate the Duration of the access in seconds
             duration = (parse_stk_date(itr[1]) - parse_stk_date(itr[0])).total_seconds()
+
             # Calculate the Duration of the data transfer after Synchronization
             duration = duration - 20.0
-            # Add up to the total duration
+
+            # Add up to the total duration if the duration is positive (i.e. there is a communication)
             if duration > 0:
                 totalDuration = totalDuration + duration
             
-
+        # Compute the access intervals for the colony B
         access2 = sensor.GetAccess("Target/MoonBaseB")
         access2.ComputeAccess()
         accessList2 = access2.ComputedAccessIntervalTimes.ToArray(0, -1)
         for itr in accessList2:
             # Caluculate the Duration of the access in seconds
             duration = (parse_stk_date(itr[1]) - parse_stk_date(itr[0])).total_seconds()
+
             # Calculate the Duration of the data transfer after Synchronization
             duration = duration - 20.0
-            # Add up to the total duration
+
+            # Add up to the total duration if the duration is positive (i.e. there is a communication)
             if duration > 0:
                 totalDuration = totalDuration + duration
 
         print(f"Total Duration of Communication for {sat.InstanceName} is {totalDuration}s")
+
+        # Update the best performing satellite if the current satellite has a higher total duration
         if totalDuration > bestPerformingDuration:
             bestPerformingDuration = totalDuration
             bestPerformingSat = sat
@@ -213,12 +227,15 @@ def compute_access_intervals() -> tuple[IntervalList, IntervalList, IntervalList
     access_intervals_B: IntervalList = []
     access_intervals_sun: IntervalList = []
 
+    # Access intervals for MoonBaseA
     accessList1 = access1.ComputedAccessIntervalTimes.ToArray(0, -1)
     access_intervals_A = [(parse_stk_date(itr[0]), parse_stk_date(itr[1])) for itr in accessList1]
 
+    # Access intervals for MoonBaseB
     accessList2 = access2.ComputedAccessIntervalTimes.ToArray(0, -1)
     access_intervals_B = [(parse_stk_date(itr[0]), parse_stk_date(itr[1])) for itr in accessList2]
 
+    # Sunlight intervals
     access_intervals_sun = [(parse_stk_date(start), parse_stk_date(stop)) for start, stop in sunlitWindows]
 
     return access_intervals_A, access_intervals_B, access_intervals_sun

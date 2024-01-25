@@ -1,3 +1,4 @@
+# Imports
 import gurobipy as gp
 from gurobipy import GRB
 
@@ -10,6 +11,9 @@ __all__ = [
 ]
 
 def mergeIntervals(listA, listB):
+    """Given two lists of intervals, the function merges them into one list of intervals.
+    In case of overlapping intervals, the function chooses the interval with the maximum 
+    duration (max data collected)."""
     mergedIntervals = []
 
     allIntervals = listA + listB
@@ -31,6 +35,7 @@ def mergeIntervals(listA, listB):
     return mergedIntervals
 
 def findCoincidingIntervals(listA, listB):
+    """Given two lists of intervals, the function finds the coinciding intervals between the two lists."""
     coincidingIntervals = []
 
     # Combine both lists
@@ -56,30 +61,47 @@ def find_schedule_lp(
     intervals_B: IntervalList = []
 
     # Compute schedule
+    # Find the coinciding intervals between the two lists where scheduling can be chosen among the two.
     mergedIntervals = findCoincidingIntervals(access_A, access_B)
     mergedIntervalsData = []
+
+    # Iterate through the merged intervals and calculate the data collected in each interval
     for itr in mergedIntervals:
         # Caluculate the Data collected in the interval
         mergedIntervalsData.append(collected_data(itr[0], itr[1]))
 
+    # Create a new model
     x = range(len(mergedIntervalsData))
     y = range(len(mergedIntervalsData))
 
+    # Create variables for the model. x represents the intervals chosen for colony A 
+    # and y represents the intervals chosen for colony B. Both are binary variables to represent scheduling.
+    # x[i] = 1 represents that the ith interval is alocated to colony A for communication.
+    # y[i] = 1 represents that the ith interval is alocated to colony B for communication.
+    # 0 in both variables represents that the interval is not allocated to the colony. (i.e. no communication)
     x = m.addVars(x, vtype=GRB.BINARY, name="x")
     y = m.addVars(y, vtype=GRB.BINARY, name="y")
 
+    # Set objective function
+    # To maximize the data collection
     m.setObjective(x.prod(mergedIntervalsData) + y.prod(mergedIntervalsData), GRB.MAXIMIZE)
 
+    # Add constraints (fairness constraint)
     m.addConstr(x.prod(mergedIntervalsData) - y.prod(mergedIntervalsData) <= namespace.epsilon, "fairness_constraint")
     m.addConstr(y.prod(mergedIntervalsData) - x.prod(mergedIntervalsData) <= namespace.epsilon, "fairness_constraint_2")
 
+    # Add constraints (scheduling constraint)
+    # i.e. if an interval is chosen for colony A, it cannot be chosen for colony B and vice versa.
+    # However, both can remain 0 as well denoting no communication.
     m.addConstrs(x[i] + y[i] <= 1 for i in range(len(mergedIntervalsData)))
 
     m.optimize()
 
+    # Retrieve the solved values for x and y
     solvedX = [int(var.x) for var in list(x.values())]
     solvedY = [int(var.x) for var in list(y.values())]
 
+    # Iterate through the solved values and append the intervals to the respective lists
     for itr in range(len(solvedX)):
         if solvedX[itr] == 1:
             intervals_A.append(mergedIntervals[itr])
