@@ -10,6 +10,9 @@ __all__ = [
 ]
 
 def mergeIntervals(listA, listB):
+    """Given two lists of intervals, the function merges them into one list of intervals.
+    In case of overlapping intervals, the function chooses the interval with the maximum 
+    duration (max data collected)."""
     mergedIntervals = []
 
     allIntervals = listA + listB
@@ -31,6 +34,7 @@ def mergeIntervals(listA, listB):
     return mergedIntervals
 
 def findCoincidingIntervals(listA, listB):
+    """Given two lists of intervals, the function finds the coinciding intervals between the two lists."""
     coincidingIntervals = []
 
     # Combine both lists
@@ -47,6 +51,8 @@ def findCoincidingIntervals(listA, listB):
     return coincidingIntervals
 
 def findMutuallyExclusiveIntervals(listA, listB):
+    """Given two lists of intervals, the function finds the mutually exclusive intervals between the two lists.
+    The function keeps the first interval list intact and trims the second interval list if needed."""
     resultIntervals = []
 
     # Combine both lists
@@ -67,6 +73,7 @@ def findMutuallyExclusiveIntervals(listA, listB):
     return resultIntervals
 
 def getSocAfterUsage(currentSoc, timeDuration, load, capacity = 100.0):
+    """Given the current state of charge, the function calculates the state of charge after the usage."""
     soc = max(0, min(currentSoc - (timeDuration * load), capacity))
     return soc
 
@@ -106,8 +113,14 @@ def find_schedule_with_battery_lp(
     sunIntervals = access_sun
 
     # Compute battery-aware schedule
+    # Merge the intervals of the two colonies into coinciding intervals
     mergedIntervals = findCoincidingIntervals(access_A, access_B)
+
+    # Merge the coinciding intervals with the sun intervals into mutually exclusive intervals
     mergedIntervals = findMutuallyExclusiveIntervals(access_sun, mergedIntervals)
+
+    # Sort the intervals based on start time
+    mergedIntervals.sort(key=lambda x: x[0])
     
     sunIntervalsTime = []
     for itr in access_sun:
